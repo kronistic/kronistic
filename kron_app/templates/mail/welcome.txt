@@ -1,0 +1,33 @@
+{%- macro status() -%}
+{%- if not event -%}
+Get started by making a new meeting [{{new_meeting_url}}].
+{%- elif event.is_pending() -%}
+Your meeting "{{event.title}}" will be scheduled when all the attendees have signed into Kronistic [{{meeting_url}}].
+{%- else -%}
+Your meeting "{{event.title}}" is being scheduled [{{meeting_url}}].
+{%- endif -%}
+{%- endmacro -%}
+Dear {{user.first_name}},
+
+Welcome to Kronistic! {{status()}}
+
+Here are some important things to know about how Kronistic works:
+
+Your available times
+- You can update the times you are available for meetings at My Availability [{{availability_url}}].
+- As requested, your initial meeting availability is {{fmt_available_time(**user.setup_data)}}.
+- The system checks your synced calendars to see when you are busy. You can sync additional calendars on your Profile [{{profile_url}}].
+
+Your Kronistic meetings
+- When you are added to a meeting, Kronistic will add a DRAFT event on your Google calendar.
+- DRAFT meetings can (and will!) move.
+- When you add events to your synced calendar(s) that conflict with a DRAFT meeting, Kronistic automatically reschedules the DRAFT.
+- Once a meeting time is finalized, you will get an email (you can adjust the frequency of notifications in your Profile [{{profile_url}}]).
+- To schedule a meeting, go to the New Meeting page [{{new_meeting_url}}].
+- Track and update your Kronistic meetings on the My Meetings page [{{meetings_url}}].
+
+We look forward to supporting your busy schedule!
+
+Sincerely,
+Team Kronistic
+help@kronistic.com

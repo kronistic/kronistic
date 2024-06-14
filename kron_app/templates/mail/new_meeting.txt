@@ -1,0 +1,8 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+{{ event.creator.name }} used Kronistic to schedule a new meeting with you, "{{ event.title }}." Kronistic will find a time that works and pencil a DRAFT event to your calendar.
+
+To decline the meeting or review the meeting details, please visit your My Meetings page: {{ meetings_url }}
+{% endblock %}

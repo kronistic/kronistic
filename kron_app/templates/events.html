@@ -1,0 +1,58 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+
+<div class="container">
+  <div class="row">
+    <h1>Events</h1>
+    <h2>Overall</h2>
+    <table class="admin">
+      <tr>
+        <th>init</th>
+        <th>scheduled</th>
+        <th>pending</th>
+        <th>unscheduled</th>
+        <th>finalized</th>
+        <th>deleted</th>
+        <th>past</th>
+      </tr>
+      <tr>
+        <td style="text-align: right;">{{ counts['INIT']}}</td>
+        <td style="text-align: right;">{{ counts['SCHEDULED']}}</td>
+        <td style="text-align: right;">{{ counts['PENDING']}}</td>
+        <td style="text-align: right;">{{ counts['UNSCHEDULED']}}</td>
+        <td style="text-align: right;">{{ counts['FINALIZED']}}</td>
+        <td style="text-align: right;">{{ counts['DELETED']}}</td>
+        <td style="text-align: right;">{{ counts['PAST']}}</td>
+      </tr>
+    </table>
+    <h2>Top creators</h2>
+    <p>(Includes finalized events.)</p>
+    <h3>All time</h3>
+    <table class="admin">
+      <tr>
+        <th>user</th>
+        <th>events created</th>
+      {% for user, count in top_creators_all_time %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ count }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <h3>Last 7 days</h3>
+    <table class="admin">
+      <tr>
+        <th>user</th>
+        <th>events created</th>
+      {% for user, count in top_creators_last_7_days %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ count }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

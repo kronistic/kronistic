@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container">
+  <div class="row">
+
+    <h1>Event Info</h1>
+
+    <table class="admin">
+      <tr>
+        <th>property</th>
+        <th>value</th>
+      </tr>
+      {% for prop, val in event_data %}
+      <tr>
+        <td>{{ prop }}</td>
+        <td>{{ val }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+  </div>
+</div>
+
+{% endblock %}

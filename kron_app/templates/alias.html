@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container alias">
+  <div class="row">
+    <h1 class="highlight">Add an Email Alias</h1>
+  </div>
+  <div class="row">
+    <p>
+      Would you like to add "{{ email.address }}" to your profile as
+      an alias?
+    </p>
+  </div>
+  {% if events %}
+  <div class="row">
+    <p>
+      Doing so will add you as an attendee to the following {{ 'meeting' | pluralize(events) }}:
+    </p>
+    <ul>
+      {% for (title, creator_name) in events %}
+      <li>
+        <span class="title">"{{ title }}"</span><br>
+        <span class="creator">Created by {{ creator_name }}</span><br>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  <div class="row">
+    <form action="" method="post">
+      <p>
+        <button type="submit" class="btn btn-big">Confirm</button>
+        <a href="{{ url_for('meetings') }}" class="no-thanks">No Thanks</a>
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

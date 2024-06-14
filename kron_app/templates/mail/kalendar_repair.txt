@@ -1,0 +1,8 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+It looks like you deleted your Kronistic calendar (the "kalendar"). We use this to add Kronistic meetings to your Google calendar. If you would like to continue to see Kronistic meetings in your Google calendar please visit your Profile [{{profile_url}}] and re-enable meeting sync.
+
+Quick reminder that you can hide the Kronistic calendar so it doesn't clutter the view of your Google calendar. To do this, go to the list of calendars in the lefthand column of your Google calendar account and uncheck the box next to "kalendar."
+{% endblock %}

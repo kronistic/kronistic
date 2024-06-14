@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container fixit">
+  <div class="row">
+
+    <h1 class="highlight">Scheduling Help</h1>
+
+    {# TODO: replace user.name/'they' with 'you' where user == current_user? But also in emails? #}
+
+    {% if event.is_unscheduled() %}
+
+    <p>
+      Kronistic was not able to schedule your meeting
+      <a href="{{ url_for('edit_meeting', id=event.id) }}">"{{event.title}}"</a>
+      between {{ window_start_local }} and {{ window_end_local }} as requested.
+    </p>
+
+    {% if impossible and (reason_singles or reason_sets) %}
+    <ul>
+      {% for user,k in reason_singles %}
+      <li>
+        {{ user.name }} has no availability.
+        {% if k %}
+        (They should check their
+        <a href="{{ url_for('availability') }}">availability</a>!)
+        {% endif %}
+      </li>
+      {% endfor %}
+      {% for users in reason_sets %}
+      <li>
+        {{ users | map(attribute='name') | tosentence }} have no overlapping availability.
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% elif event.is_scheduled() %}
+
+    <p>
+      Your meeting is currently scheduled to start
+      {{ from_utc_to_s(event.draft_start, current_user.tz) }}.
+    </p>
+
+    {% elif event.is_pending() and not event.invitees == [] %}
+
+    {# TODO: Expand to list attendees we're waiting on? #}
+
+    <p>
+      Your meeting is awaiting
+      {{ 'attendee' | pluralize(event.invitees, show_count=True) }}
+      to sign up&hellip;
+    </p>
+
+    {% else %}
+
+    <p>Your meeting is being scheduled&hellip;</p>
+
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

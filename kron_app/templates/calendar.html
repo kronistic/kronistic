@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container event">
+  <div class="row">
+    <form action="/calendars" method="post">
+      {% for item in items %}
+      <input type="hidden" name="{{ item['id'] }}" value="{{ item['summary'] }}" />
+      {% endfor %}
+      <h1 class="highlight">Add a calendar</h1>
+      <p>
+        You can have Kronistic watch additional calendars &ndash; busy times on those calendars will be avoided when scheduling.
+      </p>
+      <p>
+        <select name="gcal_id">
+          <option value="">Choose a calendar to add...</option>
+          {% for item in items %}
+          <option value="{{ item['id'] }}">
+            {% if item['summary'] == current_user.email %}
+            {{ current_user.name }}
+            {% else %}
+            {{ item['summary'] }}
+            {% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </p>
+      <p>If you don't see a calendar, make sure it is shared with your primary Google account!</p>
+      <p>
+        <input type="submit" value="Add Calendar" class="btn" />
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

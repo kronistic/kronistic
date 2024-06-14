@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container event">
+  <div class="row">
+    <div>
+      <h1>
+        {% if update %}
+        <span class="highlight">Edit meeting</span>
+        {% else %}
+        <span class="highlight">Request a new meeting</span>
+        {% endif %}
+      </h1>
+      <p class="preamble">
+        {% if update %}
+        {% if event.is_scheduled() %}
+        Your meeting is currently scheduled to start {{ from_utc_to_s(event.draft_start, current_user.tz) }}.<br>
+        {% elif event.is_unscheduled() %}
+        Your meeting is currently unscheduled.<br>
+        {% elif event.is_pending() and event.required_attendee_decline_count > 0 %}
+        Your meeting was declined by {{ 'required attendee' | pluralize(event.required_attendee_decline_count, show_count=True) }}.<br>
+        {% elif event.is_pending() and not event.invitees == [] %}
+        Your meeting is awaiting {{ 'attendee' | pluralize(event.invitees, show_count=True) }} to sign up&hellip;<br>
+        {% else %}
+        Your meeting is being scheduled&hellip;<br>
+        {% endif %}
+        When you make changes to this form, Kronistic automatically
+        reschedules the meeting as needed.
+        {% else %}
+        Please provide the details about your meeting. To invite folks
+        who do not have Kronistic accounts, simply add their email
+        address as an attendee. The system will send them an email
+        with next steps.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+  {% if form.errors %}
+  <pre>{{ form.errors }}</pre>
+  {% endif %}
+  <form id="meetingform" action="" method="post" onsubmit="return submitResult();" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row event-form">
+      <div class="col-md-6">
+        <div id="attendee-template" class="attendee" style="display: none;">
+          <input type="hidden" class="email" />
+          <div class="name-container">
+            <span class="name"></span>
+            <span class="declined-label">[declined]</span>
+          </div>
+          <label>optional
+            <input type="checkbox" class="optional" />
+          </label>
+          |
+          <a href="#" class="remove">remove</a>
+        </div>
+        <p><label>Attendees</label> <span title="Non-Kronistic users will be invited to set up an account."
+            style="cursor: help;">(?)</span></p>
+        <div id="attendees-container">
+
+          <div id="attendees">
+            {% for f in form.theattendees %}
+            <div class="attendee{% if f.email.data in declined_by %} declined{% endif %}">
+              {{ f.email(class_='email') }}
+              <div class="name-container">
+                <span class="name">{{ form.getname(f.email.data) }}</span>
+                <span class="declined-label">[declined]</span>
+              </div>
+              {{ f.optional.label }}
+              {{ f.optional }}
+              |
+              <a href="#" class="remove">remove</a>
+            </div>
+            {% endfor %}
+          </div>
+          <div style="clear: both;"></div>
+          <p id="autocomplete-container"></p>
+        </div>
+        <p>
+          It should be {{ form.length_in_mins(step=15, style="width: 55px;") }} mins long <span
+            title="Rounded up to nearest 15min." style="cursor: help;">(?)</span>
+        </p>
+        <p>
+          Schedule it
+          <input id="window" type="text" size="30">
+          <span title="Between these dates (inclusive) in {{ form.tzname.data }} time" style="cursor: help;">(?)</span>
+          {{ form.tzname }}
+          <!--- These are populated by the date range picker --->
+          {{ form.window_start_local(hidden=True) }}
+          {{ form.window_end_local(hidden=True) }}
+        </p>
+        <p>
+          Finalize it {{ form.freeze_horizon_in_days(style="width: 45px;",disabled=update and event.is_final()) }} day(s) before
+        </p>
+        <p>
+          {{ form.attpriority.label }}
+          <span title="Your priority for scheduling this meeting." style="cursor: help;">(?)</span>
+          <div class="priorityinput">
+            <span class="prioritylabel">Low</span>
+            {{ form.attpriority(style="width: 200px;") }}
+            <span class="prioritylabel">High</span>
+          </div>
+        </p>
+      </div>
+      <div class="col-md-6">
+        <p>
+          <label>{{ form.title.label }}</label><br> <!-- <span class='form-required'>(required)</span><br> -->
+          {{ form.title }}
+        </p>
+        <p>
+          <label>{{ form.location.label }}</label>
+          <span title="Use this to include the location or a virtual meeting link in the calendar event."
+                style="cursor: help;">(?)</span><br>
+          {{ form.location }}<br>
+          {% if current_user.virtual_link %}
+          <a href="#" id="add-virtual-link">Set to my virtual meeting link</a>
+          {% else %}
+          <span id="add-virtual-link-tip">
+            Tip: You can add your virtual meeting link to your
+            <a href="{{ url_for('profile', _anchor='preferences') }}">profile</a>
+          </span>
+          {% endif %}
+        </p>
+        <div class="field-container"> <!-- not a P because contains nested DIV -->
+          <label>{{ form.description.label }}</label>
+          <span title="Use this to include meeting topics, etc. in the calendar event."
+                style="cursor: help;">(?)</span><br>
+          {{ form.description(style='display: none;') }}
+          <div id="editor">
+            {{ form.description.data | replace("\n", "<br>") | safe }}
+          </div>
+        </div>
+        {% if not update %}
+        <p>
+          This is a {{ form.recur }} meeting<span class="recur-container">:</span>
+        </p>
+        <p class="recur-container" style="display: none;">
+          repeat every {{ form.interval(style="width: 45px;") }}
+          {{ form.frequency(style="width: 95px;")}},
+          for {{ form.repetitions(style="width: 45px;") }} occurrences
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    <!-- <div class="row event-form"> -->
+    <p>{{ form.submit(class_='btn',id='createbutton',disabled=update and event.in_progress()) }}</p>
+  </form>
+  {% if update %}
+  <form action="/meetings/{% if event.creator == current_user %}delete{% else %}decline{% endif %}" method="post">
+    <input type="hidden" name="event_id" , value="{{ event.id }}" />
+    <input type="hidden" name="all" , value="" />
+    <a href='#' onclick="$(this).parents('form').submit(); return false;" class="btn">
+      {% if event.creator == current_user %}Delete{% else %}Decline{% endif %}
+    </a>
+  </form>
+  {% endif %}
+</div>
+
+<script type="text/javascript">
+
+  function submitResult() {
+    if (attendee_emails().length === 1) {
+      if (confirm("There is only one attendee in this meeting. Proceed?") == false) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  function set_field_visibility() {
+    var $recur = $('#recur');
+    var $repetitions_container = $('.recur-container');
+    if ($recur.val() === '0') { // one-off
+      $repetitions_container.hide();
+    } else {
+      $repetitions_container.show();
+    }
+  };
+
+  var DOING_EDIT = {{ update | tojson }};
+  const autocomplete_options = {{ autocomplete_options | tojson }};
+  const declined_by = {{ declined_by | tojson }};
+
+  // {type='user', name=str, email=str}
+  // {type='group', members=[{name: str, email: str}]}
+  // {type='invitee', email: str}
+  
+  function search(q) {
+    const ql = q.toLowerCase();
+    const matches = autocomplete_options.filter(obj => {
+      if (obj.type === 'user') {
+        return obj.email.toLowerCase().indexOf(ql) !== -1 || obj.name.toLowerCase().indexOf(ql) !== -1;
+      } else if (obj.type === 'group') {
+        return obj.name.toLowerCase().indexOf(ql) !== -1;
+      } else {
+        return false;
+      }
+    });
+    if (matches.length > 0) {
+      return matches;
+    } else {
+      const email = q.trim().toLowerCase();
+      return [{ email: email, type: 'invitee' }];
+    }
+  }
+
+  function attendee_emails() {
+    return $('#attendees input.email').map((i, e) => $(e).val()).toArray();
+  }
+  function already_an_attendee(email) {
+    return attendee_emails().indexOf(email) !== -1;
+  }
+  function add_attendee_to_ui(name, email) {
+    if (already_an_attendee(email)) { return; }
+    const i = nextAttendeeId++;
+    const $e = $attendee_template.clone().prop('id', '');
+    if (declined_by.indexOf(email) !== -1) {
+      $e.addClass('declined');
+    }
+    $e.find('.name').text(name);
+    $e.find('input.email').prop('name', 'theattendees-'+i+'-email').val(email);
+    $e.find('input.optional').prop('name', 'theattendees-'+i+'-optional');
+    $e.appendTo('#attendees').show();
+  }
+
+  // Add an entry to the attendees list.
+  var nextAttendeeId = {{ form.next_attendee_id() }};
+  const $attendee_template = $('#attendee-template');
+  function add_attendee(obj) {
+    if (!obj) { return; } // e.g. on blur with empty input
+    // This kludge is used to clear the auto-complete when confirm
+    // happens on blur.
+    window.setTimeout(() => $('#autocomplete').val(''), 0);
+    if (obj.type === 'user') {
+      add_attendee_to_ui(obj.name, obj.email);
+    } else if (obj.type === 'group') {
+      obj.members.forEach(function(member) {
+        add_attendee_to_ui(member.name, member.email);
+      });
+    } else if (obj.type === 'invitee') {
+      const email = obj.email;
+      const k = function(data) { add_attendee_to_ui(data.name, data.email); };
+      $.get('/api/user', {email: email}, k).fail(() => k({name: email, email: email}));
+    }
+  }
+
+  function suggestion_template(obj) {
+    if (obj.type === 'user') {
+      return obj.name + '<br><span style="font-size: 80%;">' + obj.email + '</span>'
+    } else if (obj.type === 'group') {
+      return obj.name + '<br><span style="font-size: 80%;">' + obj.members.length + ' member(s)</span>'
+    } else if (obj.type === 'invitee') {
+      return 'Add attendee by email<br><span style="font-size: 80%;">' + obj.email + '</span>'
+    }
+  }
+
+  $(function () {
+    // Set-up the attendee auto-complete.
+    accessibleAutocomplete({
+      element: document.querySelector('#autocomplete-container'),
+      id: 'autocomplete',
+      source: (q, k) => k(search(q)),
+      displayMenu: 'overlay',
+      placeholder: 'Add by email, name, group...',
+      autoselect: true,
+      showNoOptionsFound: false,
+      confirmOnBlur: true,
+      onConfirm: add_attendee,
+      templates: {
+        suggestion: suggestion_template,
+        inputValue: obj => ''
+      }
+    });
+
+    // Implements the "remove attendee" functionality.
+    $('#attendees').click(function (e) {
+      var $e = $(e.target);
+      if ($e.is('.remove')) {
+        $e.parents('.attendee').remove();
+        return false;
+      }
+    });
+
+    // Don't submit the form when enter is pressed, unless on the
+    // submit button.
+    // https://stackoverflow.com/a/1977126
+    $('form').on('keydown', ':input:not(textarea):not(:submit)', function (e) {
+      if (e.which == 13) {
+        e.preventDefault();
+      }
+    });
+
+    var quill = new Quill('#editor', {
+      theme: 'bubble',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          [{'list': 'ordered'}, { 'list': 'bullet' }],
+          ['link', 'clean']
+        ]
+      }
+    });
+    const initialHtml = quill.root.innerHTML;
+    // Adjust default link url.
+    $(quill.theme.tooltip.textbox).attr('data-link', 'https://example.com');
+
+    $description = $('#description');
+    $('form').on('submit', function(e) {
+      // Only persist user changes, and not changes made by quill when
+      // populating the editor with the existing `description`. This
+      // avoids an empty `<p>` before the edit link when the user doesn't
+      // supply a description for a new meeting, and avoids a push to
+      // gcal when the only change is quill adding attributes to the edit
+      // link.
+      const html = quill.root.innerHTML;
+      if (html !== initialHtml) {
+        $description.val(html);
+      }
+    });
+
+
+
+    // $('#meetingform').on('submit', function (ev) {
+    //   var $form = this;
+    //   ev.preventDefault();
+    //   var href = $(this).attr('href');
+    //   var modal = $('<div class="modal" role="dialog" aria-labelledby="updateConfirmLabel" aria-hidden="true">');
+    //   modal.append($('<div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button><h4 class="modal-title" id="updateConfirmLabel">"Are you sure?"</h4></div>'));
+    //   modal.append($('<div class="modal-body"></div>'));
+    //   var modalFooter = $('<div class="modal-footer"><button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button></div>');
+    //   var okButton = $('<button class="btn btn-u btn-u-blue">Create meeting</button>');
+    //   modalFooter.append(okButton);
+
+    //   modal.append(modalFooter);
+
+    //   $('body').append(modal);
+    //   modal.modal({ show: true });
+    //   modal.on('hidden.bs.modal', function (e) {
+    //     modal.remove();
+    //   });
+    //   okButton.click(function () {
+    //     $form.submit(); //or ajax submit here = you choose, in case of ajax use modal.modal('hide'); to hide modal.
+    //   })
+
+
+    // });
+
+
+    // This is an alternative to adding email invitees as search
+    // results. This explicitly calls the `add_attendee` handler when
+    // "enter" is pressed (and no results are found).
+
+    // const $autocomplete = $('#autocomplete');
+    // $('form').on('keypress', function(e) {
+    //   if (e.which == 13) {
+    //     const $target = $(e.target);
+    //     if ($target.is($autocomplete)) {
+    //       // console.log('enter key pressed in auto-complete');
+    //       var email = $autocomplete.val();
+    //       add_attendee({email: email, name: email});
+    //       $autocomplete.val('');
+    //       return false;
+    //     }
+    //   }
+    // });
+
+    // Window picker
+    //
+    // Note that there's a mismatch between the way we interpret dates
+    // on the backend and the way they are displayed as ranges in the
+    // UI. To make things work as expected we shift the end date back and
+    // forth by a day as we set/get is value in the UI.
+    $window_start_local = document.getElementById('window_start_local');
+    $window_end_local = document.getElementById('window_end_local');
+    $('#window').daterangepicker({
+      autoApply: false, // set to true to hide apply/cancel buttons
+      drops: 'auto',
+      startDate: moment($window_start_local.value, 'YYYY-MM-DD'),
+      endDate: moment($window_end_local.value, 'YYYY-MM-DD').subtract(1, 'day'),
+      locale: { format: 'MMMM D, YYYY' }
+    }, function (start, end) {
+      $window_start_local.value = start.format('YYYY-MM-DD');
+      $window_end_local.value = end.clone().add(1, 'day').format('YYYY-MM-DD');
+    });
+
+    // Toggle one-off / series form elements.
+    if (!DOING_EDIT) {
+      set_field_visibility()
+      $('#recur').change(set_field_visibility);
+    }
+
+    const virtual_link = {{ current_user.virtual_link | tojson }};
+    $('#add-virtual-link').click(function() {
+      $('#location').val(virtual_link);
+      return false;
+    });
+  });
+</script>
+{% endblock %}

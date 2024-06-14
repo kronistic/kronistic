@@ -1,0 +1,51 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+
+<div class="container">
+  <div class="row">
+    <h1>Calendars</h1>
+    <table class="admin">
+      <tr>
+        <th>id</th>
+        <th>user_id</th>
+        <th>last sync at (utc)</th>
+        <th>watch error count</th>
+        <th>watch last error</th>
+        <th>notifications expire in (secs)</th>
+      </tr>
+      {% for calendar in calendars %}
+      <tr>
+        <td>{{ calendar.id }}</td>
+        <td>{{ calendar.user_id }}</td>
+        <td>
+          {% if calendar.gcal_last_sync_at %}
+          {{ calendar.gcal_last_sync_at.strftime('%y/%m/%d %H:%M:%S') }}
+          {% else %}
+          None
+          {% endif %}
+        </td>
+        <td style="text-align: right;">{{ calendar.gcal_watch_error_count }}</td>
+        <td>
+          <code>
+          {% if calendar.gcal_watch_last_error %}
+          {{ calendar.gcal_watch_last_error | truncate(256) }}
+          {% else %}
+          {{ calendar.gcal_watch_last_error }}
+          {% endif %}
+          </code>
+        </td>
+        <td style="text-align: right;">
+          {% if calendar.gcal_channel_expires_at %}
+          {{ (calendar.gcal_channel_expires_at - utcnow).total_seconds() | int }}
+          {% else %}
+          None
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

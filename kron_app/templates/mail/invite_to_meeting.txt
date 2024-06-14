@@ -1,0 +1,13 @@
+Hello,
+
+{{creator.name}} would like to schedule a meeting with you using Kronistic, an AI scheduling assistant.
+
+NEW TO KRONISTIC? Set up your account here: {{invite_url}}
+
+ALREADY HAVE A KRONISTIC ACCOUNT? You can claim this meeting (and others for this email) here: {{alias_url}}
+
+For now, Kronistic supports Google calendars only. If you do not have a Google calendar or prefer to schedule by hand, please click here: {{invite_url}}. We will let {{creator.name}} know to follow up with you. 
+
+Sincerely,
+Team Kronistic
+help@kronistic.com

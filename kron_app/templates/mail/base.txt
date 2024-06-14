@@ -1,0 +1,8 @@
+{% block content %}{% endblock %}
+Sincerely,
+Team Kronistic
+help@kronistic.com
+
+Schedule a meeting here [{{url_for('add_meeting')}}]
+Review your meetings here [{{url_for('meetings')}}]
+Check out our FAQ here [{{ext_url_for('help')}}]

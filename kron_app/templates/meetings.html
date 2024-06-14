@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% macro if_else_creator(event, ifs, elses) %}
+{% if event.creator == current_user %}{{ ifs }}{% else %}{{ elses }}{% endif %}
+{% endmacro %}
+
+{% macro event_details(event) -%}
+<a href="/meeting/{{event.id}}" class="title">{{event.title}}</a>
+
+{% if event.creator != current_user %}
+created by {{event.creator.name}}
+{% endif %}
+
+(
+<span class="remove">
+  <a href="#">{{ if_else_creator(event, 'remove', 'decline') }}</a>
+</span>
+<span class="meeting_or_series" style="display: none;">
+  <a href="#" class="choice_meeting">meeting</a>
+  or
+  <a href="#" class="choice_series">series</a>?
+</span>
+<span class="confirm_meeting" style="display: none;">
+  {{ if_else_creator(event, 'remove', 'decline') }} meeting?
+  <form action="/meetings/{{ if_else_creator(event, 'delete', 'decline') }}" method="post" style="display: inline;">
+    <input type="hidden" name="event_id", value="{{ event.id }}" />
+    <input type="hidden" name="all", value="" />
+    <a href='#' onclick="$(this).parents('form').submit(); return false;">yes</a>
+  </form>
+  /
+  <a href="#" class="choice_no">no</a>
+</span>
+<span class="confirm_series" style="display: none;">
+  {{ if_else_creator(event, 'remove', 'decline') }} series?
+  <form action="/meetings/{{ if_else_creator(event, 'delete', 'decline') }}" method="post" style="display: inline;">
+    <input type="hidden" name="event_id", value="{{ event.id }}" />
+    <input type="hidden" name="all", value="1" />
+    <a href='#' onclick="$(this).parents('form').submit(); return false;">yes</a>
+  </form>
+  /
+  <a href="#" class="choice_no">no</a>
+</span>
+)
+
+<br>
+
+{% if event.is_final() %}
+Scheduled starting {{ from_utc_to_s(event.draft_start, current_user.tz) }}
+{% elif event.is_draft() %}
+Draft schedule starting {{ from_utc_to_s(event.draft_start, current_user.tz) }}
+{% elif event.is_unscheduled() %}
+Not scheduled &mdash; <a href="{{ url_for('fix_meeting', id=event.id) }}">help</a>
+{% elif event.is_pending() and event.required_attendee_decline_count > 0 %}
+Declined by {{ 'required attendee' | pluralize(event.required_attendee_decline_count, show_count=True) }}
+{% elif event.is_pending() and not event.invitees == [] %}
+Waiting for {{ 'attendee' | pluralize(event.invitees, show_count=True) }} to sign up&hellip;
+{% else %}
+Scheduling!
+{% endif %}
+
+{%- endmacro %}
+
+{% block app_content %}
+<div class="meetings">
+  <div class="row">
+    {% if memo == 'greeting' %}
+    <div class="memo">
+      <p>
+        Hi {{ current_user.first_name }}, you have
+        {{ 'meeting' | pluralize(event_count, show_count=True) }}.
+      </p>
+    </div>
+    {% elif memo == 'welcome' %}
+    <div class="memo">
+      <p>
+        Welcome to Kronistic! We're glad you're here. Here is a quick
+        recap of how Kronistic works so that you can unlock the full
+        power of automatic, dynamic scheduling.
+      </p>
+      <h1>How does Kron know when you're available?</h1>
+      <p>
+        Kronistic is available 24/7, but we know that you're not. Go
+        to <a href="{{ url_for('availability') }}">My Availability</a>
+        to tell Kronistic what times each day you are willing to
+        attend meetings. For now, we populated your availability using
+        the information you provided during sign up.
+      </p>
+      <p>
+        Do you have times that you are technically available but you'd
+        prefer avoid if possible? Use different levels of "if needed"
+        availability to fine-tune your calendar.
+      </p>
+      <h1>How does Kronistic know when you're busy?</h1>
+      <p>
+        Your primary Google calendar is synced to Kronistic. The
+        system sees busy events in your synced calendar(s) and never
+        schedules Kronistic meetings during those times. You can sync
+        additional calendars in your <a href="{{ url_for('profile')
+        }}">Kronistic Profile</a>.
+      </p>
+      <h1>How do you track meetings scheduled in Kronistic?</h1>
+      <p>
+        This page shows a list of all the current Kronistic meetings.
+        We also send meetings you are invited to attend directly to
+        your primary calendar.
+      </p>
+      <p>
+        Remember, DRAFT meetings can and will move! Once the meeting
+        time is finalized, we'll send you an email. Hate extra emails?
+        Pro tip: you can adjust your notification settings in your
+        <a href="{{ url_for('profile') }}">Kronistic Profile</a>.
+      </p>
+      <p>
+        You're all set to start scheduling with Kronistic! Put us to
+        work with a <a href="{{ url_for('add_meeting') }}">New
+        Meeting</a>.
+      </p>
+      <p>-The Kronistic team</p>
+    </div>
+    {% endif %}
+  </div>
+  <div class="row">
+    <a href="{{ url_for('add_meeting') }}" class="btn btn-big">New Meeting</a>
+  </div>
+  {% if main|count > 0 %}
+    <div class="row">
+      <h3 class="highlight">Your Meetings</h3>
+      <div class="all-meetings">
+        <ul>
+          {% for event in main %}
+            <li class="event" data-event-id="{{ event.id }}" data-series-id="{% if event.series_id -%}{{ event.series_id }}{%- endif %}">
+              {{ event_details(event) }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+  {% if others|count > 0 %}
+    <div class="row">
+      <h3 class="highlight">Unscheduled Meetings</h3>
+      <div class="all-meetings">
+        <ul>
+          {% for event in others %}
+            <li class="event" data-event-id="{{ event.id }}" data-series-id="{% if event.series_id -%}{{ event.series_id }}{%- endif %}">
+              {{ event_details(event) }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+</div>
+<script type="text/javascript">
+  function get_data($e) {
+    return {event_id: $e.data('event-id'), series_id: $e.data('series-id')};
+  }
+  $(function() {
+    $('.event .remove a').click(function(e) {
+      var $e = $(e.target).parents('.event');
+      var obj = get_data($e);
+
+      // Close all open delete controls.
+      $('.event .remove').show();
+      $('.event .meeting_or_series').hide();
+      $('.event .confirm_meeting').hide();
+      $('.event .confirm_series').hide();
+      // Remove all highlighting.
+      $('.event .title').removeClass('hl');
+
+      $e.find('.remove').hide();
+      if (obj.series_id === '') {
+        $('.event[data-event-id=' + obj.event_id + '] .title').addClass('hl');
+        $e.find('.confirm_meeting').show();
+      } else {
+        $e.find('.meeting_or_series').show();
+      }
+      return false;
+    });
+    $('.event a.choice_meeting').click(function(e) {
+      var $e = $(e.target).parents('.event');
+      var obj = get_data($e);
+      $('.event[data-event-id=' + obj.event_id + '] .title').addClass('hl');
+      $e.find('.meeting_or_series').hide();
+      $e.find('.confirm_meeting').show();
+      return false;
+    });
+    $('.event a.choice_series').click(function(e) {
+      var $e = $(e.target).parents('.event');
+      var obj = get_data($e);
+      $('.event[data-series-id=' + obj.series_id + '] .title').addClass('hl');
+      $e.find('.meeting_or_series').hide();
+      $e.find('.confirm_series').show();
+      return false;
+    });
+    $('.event a.choice_no').click(function(e) {
+      var $e = $(e.target).parents('.event');
+      var obj = get_data($e);
+      if (obj.series_id !== '') {
+        $('.event[data-series-id=' + obj.series_id + '] .title').removeClass('hl');
+      }
+      $('.event[data-event-id=' + obj.event_id + '] .title').removeClass('hl');
+      $e.find('.confirm_meeting').hide();
+      $e.find('.confirm_series').hide();
+      $e.find('.remove').show();
+      return false;
+    });
+  });
+</script>
+{% endblock %}

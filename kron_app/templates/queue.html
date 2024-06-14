@@ -1,0 +1,25 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+
+<div class="container">
+  <div class="row">
+    <h1>Pending Tasks</h1>
+    <table class="admin">
+      <tr>
+        <th>task</th>
+        <th>args</th>
+        <th>kwargs</th>
+      </tr>
+      {% for task, args, kwargs in q %}
+      <tr>
+        <td>{{ task }}</td>
+        <td>{{ args }}</td>
+        <td>{{ kwargs }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

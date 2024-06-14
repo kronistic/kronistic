@@ -1,0 +1,72 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+
+<div class="container">
+  <div class="row">
+    <h1>Users</h1>
+    <p>
+      {% if show == 'recent' %}
+      <a href="{{ url_for('users', show='all') }}">Show all</a>
+      {% else %}
+      <a href="{{ url_for('users', show='recent') }}">Show recent</a>
+      {% endif %}
+    </p>
+    <p>Number of admins: {{ admin_count }}</p>
+    <table class="admin">
+      <tr>
+        <th>id</th>
+        <th>emails</th>
+        <th>setup_complete</th>
+        <th>created at (utc)</th>
+        <th>last login at (utc)</th>
+        <th>notification status</th>
+        <th>api scope / errors / quota / pending / next</th>
+        <th>my meetings / is creator</th>
+        <th>contacts</th>
+        <th>invited</th>
+      </tr>
+      {% for user, meetings_count, is_creator_count, pending_gcal_creation, next_event_to_create, notification_status, scope_status in users_extra %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>
+          {{ user.email }}
+          {% for email in user.aliases %}
+          <br><em>{{ email }}</em>
+          {% endfor %}
+        </td>
+        <td>{{ user.setup_complete }}</td>
+        <td>{{ user.created_at.strftime('%y/%m/%d %H:%M:%S') }}</td>
+        <td>
+          {% if user.last_login_at is none %}
+          None
+          {% else %}
+          {{ user.last_login_at.strftime('%y/%m/%d %H:%M:%S') }}
+          {% endif %}
+        </td>
+        <td>
+          {{ notification_status }}
+        </td>
+        <td>
+          {{ scope_status }}
+          / {{ user.gcal_api_error_count }}
+          / {{ user.gcal_quota }}
+          {% if user.gcal_quota == 0 %}
+          / {{ pending_gcal_creation }}
+          {% if next_event_to_create %}
+          / <a href="{{ url_for('event_info', id=next_event_to_create.id) }}">
+            {{ next_event_to_create.id }}
+          </a>
+          {% endif %}
+          {% endif %}
+        </td>
+        <td>{{ meetings_count }} / {{ is_creator_count }}</td>
+        <td>{{ user.contacts | count }}</td>
+        <td>{{ user.invited }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

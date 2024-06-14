@@ -1,0 +1,29 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+<div class="container">
+  <div class="row">
+    <h1>Errors</h1>
+    <table class="admin">
+      <tr>
+        <th>source</th>
+        <th>exception</th>
+        <th>detail</th>
+        <th>created_at</th>
+      </tr>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.data['src'] }}</td>
+        <td>
+          <a href="{{ url_for('tb', id=entry.id) }}">
+            <code>{{ entry.data['exception'] }}</code>
+          </a>
+        </td>
+        <td><code>{{ entry.data['detail'] }}</code></td>
+        <td>{{ entry.created_at.strftime('%y/%m/%d %H:%M:%S') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

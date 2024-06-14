@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# this exists because i don't know how to make `python3 -i` work as a
+# shebang in production, since `env -S` isn't supported.
+#
+# https://www.gnu.org/software/coreutils/manual/html_node/env-invocation.html#g_t_002dS_002f_002d_002dsplit_002dstring-usage-in-scripts
+#
+
+python3 -i $(dirname $0)/repl.py

@@ -1,0 +1,6 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+Kronistic could not find a time for "{{event.title}}". Visit this meeting's Help page for more information: {{meeting_help_url}}
+{% endblock %}

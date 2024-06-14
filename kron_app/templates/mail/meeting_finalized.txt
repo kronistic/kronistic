@@ -1,0 +1,8 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+Your meeting "{{event.title}}" will be at {{start_at}}.
+
+Kronistic will not move this meeting again unless a last-minute conflict arises. You can view and edit meeting details on the My Meetings page: {{meetings_url}}
+{% endblock %}

@@ -1,0 +1,6 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+Your upcoming meeting "{{event.title}}" had a last-minute conflict. Kronistic rescheduled the meeting for {{start_at}}.
+{% endblock %}

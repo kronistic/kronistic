@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kronistic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <link rel="stylesheet" href="{{url_for_static('css/custom.css')}}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="{{url_for_static('img/logo.png')}}">
+    <script type="text/javascript">
+
+      const WEEKDAYS = 'SMTWTFS'.split('');
+      const WIDTH = 7;
+      const HEIGHT = 24;
+      const DIVS = 4; // how to sub-divide each hour
+
+      // will hold pointers to each cell (DOM element)
+      const CELLS = Array(WIDTH*HEIGHT*DIVS);
+      // will hold pointers to x-labels
+      const X_LABELS = [];
+
+      const UNAVAILABLE = {{ UNAVAILABLE }};
+      const EVENT_BITMAP = {
+        {% for item in EventBitmap -%}
+        {{ item.name }}: {{ item.value }},
+        {% endfor -%}
+      };
+
+      // current data
+      var AVAILABILITY;
+      var EVENTS;
+      var MEETINGS;
+
+      var USER_ID = 0;
+      var su;
+
+      // assumes that s.x1 <= s.x2, similarly for y
+      function inSelection(s, i, j) {
+        return s.y1 <= j && j <= s.y2 && s.x1 <= i && i <= s.x2;
+      }
+
+      // this just uses a naive redraw everything approach
+      function redraw(availability, events, meetings, selection) {
+        var i,j,c,val,val2;
+        for (j=0; j<HEIGHT*DIVS; j++) {
+          for (i=0; i<WIDTH; i++) {
+            c = CELLS[i*HEIGHT*DIVS+j];
+            val = (selection && inSelection(selection,i,j)) ? selection.val : availability[i*HEIGHT*DIVS+j];
+            // It's unfortunate that this code has to know about the
+            // `cell-inner` class. The previous implementation where
+            // we toggled classes was nicer in some ways, but this is
+            // more convenient given the number of classes.
+            c.attr('class', 'cell-inner priority'+val);
+            // OPTIMIZE: (?) If we were toggling (priority) classes,
+            // we could avoid doing any work for `events` in the (common)
+            // case where they haven't changed.
+            val2 = events[i*HEIGHT*DIVS+j];
+            if (val2 == EVENT_BITMAP.IFNEEDED) {
+              c.addClass('ifneeded');
+            } else if (val2 == EVENT_BITMAP.BUSY) {
+              c.addClass('busy');
+            }
+            if (meetings[i*HEIGHT*DIVS+j] == EVENT_BITMAP.BUSY) {
+              c.addClass('meeting');
+            }
+          }
+        }
+      }
+
+      function drawUI() {
+        // draw the ui (grid, labels, scroll window, etc.)
+        var i,j,k;
+        
+        const $grid_header = $('#grid-header');
+        for (i=0; i<WIDTH; i++) {
+          var x_label = $('<div class="x-label"><div style="text-align: center;"><span class="day"></span><br><span class="date"></span></div></div>')
+          X_LABELS.push(x_label);
+          $grid_header.append(x_label);
+        }
+
+        const $grid_scroll_container = $('#grid-scroll-container');
+        var $new_row;
+        for (i=0; i<HEIGHT; i++) {
+          var $scroll_row = $('<div class="scroll-row"><div class="y-label">'+(i>0 ? i+':00' : '')+'</div><div class="grid-row"></div></div>');
+          var $grid_row = $scroll_row.find('.grid-row');
+          for (j=0; j<WIDTH; j++) {
+            var $cell = $('<div class="cell"></div>');
+            for (k=0; k<DIVS; k++) {
+              var $cell_inner = $('<div class="cell-inner"><div class="left-bar"></div><div class="right-bar"></div></div>');
+              $cell_inner.attr('data-x', j);
+              $cell_inner.attr('data-y', i*DIVS+k);
+              $cell.append($cell_inner);
+              CELLS[j*HEIGHT*DIVS+(i*DIVS+k)] = $cell_inner;
+            }
+            $grid_row.append($cell);
+          }
+          $grid_scroll_container.append($scroll_row);
+        }
+
+        // set initial scroll position to 9a
+        document.getElementById('grid-scroll-container').scrollTop = 60 * 9;
+      }
+
+      function thisWeek() {
+        var d = moment().startOf('day');
+        while (d.day() != 0) {
+          d.subtract(1, 'day');
+        }
+        return d;
+      }
+
+      function getDateFromHash() {
+        const hash = window.location.hash;
+        if (hash.length > 1) {
+          const d = moment(hash.slice(1), 'YYYY-MM-DD');
+          if (d.isValid()) {
+            return d;
+          }
+        }
+        // catch-all
+        return thisWeek();
+      }
+
+      function setHash(d) {
+        window.location.hash = d.format('YYYY-MM-DD');
+      }
+
+      $(() => {
+
+        // set-up brush ui
+        var BRUSH;
+        const $brush = $('#brush');
+        const $swatch = $('#swatch');
+        function setBrushFromUI() {
+          var val = parseInt($brush.val());
+          var max = parseInt($brush.attr('max'));
+          BRUSH = val==0 ? UNAVAILABLE : max-val;
+          $swatch.attr('class', 'priority'+BRUSH);
+        }
+        $brush.on('input', setBrushFromUI);
+        setBrushFromUI();
+
+        // set-up working indicator ui
+        var WAIT_COUNTER = 0;
+        const $working_indicator = $('#working-indicator');
+        function wait() {
+          WAIT_COUNTER++;
+          setWorkingIndicator();
+        }
+        function done() {
+          WAIT_COUNTER--;
+          setWorkingIndicator();
+        }
+        function setWorkingIndicator() {
+          $working_indicator.html(WAIT_COUNTER>0 ? 'working&hellip;' : 'ok');
+        }
+        setWorkingIndicator();
+
+        function write(recur) {
+          if (USER_ID) {
+            console.warn('no writes after switching user');
+            return;
+          }
+          // TODO: we don't want a laggard POST to overwrite a later
+          // speedy update. do something about this. queue updates
+          // to ensure order is maintained? something else?
+          wait();
+          $.post({url: '/api/availability',
+                  data: JSON.stringify({date: POS.format('YYYY-MM-DD'), availability: AVAILABILITY, recur}),
+                  success: data => {
+                    done();
+                  },
+                  contentType: 'application/json'});
+        }
+        
+        function fetchAndRedraw() {
+          // TODO: it's possible that after redraw, there's still
+          // another fetch for this page in-flight, which will do
+          // *another* re-draw once it returns. This suggests preventing
+          // edits fetches are in-flight.
+          wait();
+          const qs = USER_ID ? {user_id: USER_ID} : {};
+          $.getJSON('/api/availability/'+POS.format('YYYY-MM-DD'), qs, data => {
+            done();
+            // only redraw if we haven't since changed page.
+            if (data.date == POS.format('YYYY-MM-DD')) {
+              AVAILABILITY = data.availability;
+              EVENTS = data.events;
+              MEETINGS = data.meetings;
+              redraw(AVAILABILITY, EVENTS, MEETINGS);
+            }
+          });
+        }
+        su = function(user_id) {
+          USER_ID = user_id;
+          fetchAndRedraw();
+        };
+
+        // current page
+        //
+        // the current page (start date of week to view) is determined from
+        // the hash portion of the url. (when missing, the default is the
+        // start of the current week.) a parsed representation of this
+        // date is also maintained (`POS`) for convenience.
+        var POS;
+        const $pos = $('#pos');
+
+
+        function navigateToHash() {
+          const d = getDateFromHash();
+          const d2 = d.clone().add(6, 'days');
+          const s = (d.year() != d2.year())   ? d.format('MMMM YYYY') + ' &ndash; ' + d2.format('MMMM YYYY') :
+                    (d.month() != d2.month()) ? d.format('MMMM') + ' &ndash; ' + d2.format('MMMM YYYY') :
+                                                d.format('MMMM YYYY');
+          $pos.html(s);
+          // $pos.text(d.format('MMMM Do YYYY') + ' to ' + d.clone().add(6, 'days').format('MMMM Do YYYY'));
+          const today = moment().startOf('day');
+          for (var i=0; i<WIDTH; i++) {
+            var d_i = d.clone().add(i, 'days');
+            var $label = X_LABELS[i];
+            $label.toggleClass('today', d_i.isSame(today));
+            $label.find('.day').text(WEEKDAYS[d_i.day()]);
+            $label.find('.date').text(d_i.date());
+          }
+          POS = d;
+          fetchAndRedraw();
+        }
+
+        // draw ui, fill with current bitmap
+        drawUI();
+        navigateToHash();
+
+        // drawing interaction
+        var STATE = 0; // 1 = making a selection, 0 = not
+        var START = null; // when STATE==1, this is the cell where the selection started
+        var CURR = null;
+        
+        function getSelection($e1,$e2) {
+          if (STATE != 1) {
+            console.error('must be making selection');
+            return;
+          }
+          var tmp;
+          var x1 = parseInt($e1.attr('data-x'));
+          var y1 = parseInt($e1.attr('data-y'));
+          var x2 = parseInt($e2.attr('data-x'));
+          var y2 = parseInt($e2.attr('data-y'));
+          if (x1>x2) {
+            tmp = x1;
+            x1 = x2;
+            x2 = tmp;
+          }
+          if (y1>y2) {
+            tmp = y1;
+            y1 = y2;
+            y2 = tmp;
+          }
+          return {x1,x2,y1,y2};
+        }
+
+        function beginSelection($e) {
+          if (STATE == 0) {
+            STATE = 1;
+            START = CURR = $e;
+          }
+        }
+        function updateSelection($e) {
+          if (STATE == 1) {
+            CURR = $e;
+            var s = getSelection(START, CURR);
+            // redraw with current selection
+            s['val'] = BRUSH;
+            redraw(AVAILABILITY, EVENTS, MEETINGS, s);
+          }
+        }
+        function endSelection() {
+          if (STATE == 1) {
+            var s = getSelection(START, CURR);
+            // update bitmap
+            var i,j;
+            for (j=s.y1; j<=s.y2; j++) {
+              for (i=s.x1; i<=s.x2; i++) {
+                AVAILABILITY[i*HEIGHT*DIVS+j] = BRUSH;
+              }
+            }
+            write(false);
+            // redraw (no selection)
+            redraw(AVAILABILITY, EVENTS, MEETINGS);
+            // reset state
+            STATE = 0;
+            START = null;
+            CURR = null;
+          }
+        }
+
+        $('.cell-inner').on('pointerdown', e => {
+          e.preventDefault();
+          beginSelection($(e.currentTarget));
+        });
+        $('.cell-inner').on('pointerover', e => {
+          updateSelection($(e.currentTarget));
+        });
+        $(document).on('pointerup', e => {
+          endSelection();
+        });
+
+        // By preventing capture, we get the same `pointerover` events
+        // on a touch device that we get elsewhere. This allows us to have
+        // the browser figure out which element the pointer is over,
+        // rather than working with raw xy coords from touch events. It's not
+        // clear that this is the right long term thing, but it's simple, and
+        // makes this kinda useable on touch devices.
+        //
+        // https://github.com/w3c/pointerevents/issues/346
+        $('.cell-inner').on('gotpointercapture', e => {
+          const evt = e.originalEvent;
+          evt.target.releasePointerCapture(evt.pointerId);
+        });
+
+        // Prevent touch from scrolling the grid.
+        // There's also css `touch-action: none;` which can turn-off
+        // related stuff.
+        $('.cell-inner').on('touchstart', e => {
+          e.preventDefault();
+        });
+
+        // set-up navigation ui
+        $('#next').on('click', e => {
+          setHash(POS.clone().add(7, 'days'));
+        });
+        $('#prev').on('click', e => {
+          setHash(POS.clone().subtract(7, 'days'));
+        });
+        $('#today').on('click', e => {
+          setHash(thisWeek());
+        });
+
+        // set-up copy ui
+        const $copy = $('#copy');
+        $copy.on('click', e => {
+          if (confirm('Repeat the current week for all future weeks?')) {
+            write(true);
+          }
+        });
+
+        $(window).on('hashchange', e => {
+          navigateToHash();
+        });
+      });
+    </script>
+    <style>
+      html, body {
+          height: 100%;
+          margin: 0; /* removed margin from body to lose scroll bars */
+      }
+      #pos {
+          /* we need to accommodate e.g.
+             "december 2023 - january 2024" even
+             on the most narrow layout */
+          font-size: 21px;
+      }
+      button.availability-nav {
+          cursor: pointer;
+          padding: 10px;
+          margin-right: 10px;
+          /* set explicit button style for more consistent cross-browser
+             appearance, particularly on iOS Safari */
+          /* https://stackoverflow.com/q/3430506 */
+          border: 1px solid #999;
+          border-radius: 4px;
+      }
+      #main-container {
+          display: inline-flex;
+          flex-direction: column;
+          width: 100%;
+          /* max-width: 800px; */
+          height: 100%;
+          /* disable double-tap to zoom, which is v easy to
+             trigger while using next/prev week nav buttons
+             on iOS Safari */
+          touch-action: manipulation;
+      }
+      #upper-container {
+          background-color: #fffffc;
+          filter: drop-shadow(0 0 4px #333);
+          border-bottom: 2px solid #666;
+      }
+      #control-container {
+          margin: 10px;
+          padding: 0;
+      }
+      #nav-container {
+          margin-bottom: 10px;
+      }
+      #brush-legend-container {
+          /* equally spaced while being just wide enough to accomodate content */
+          /* it took me a while to discover this incantation */
+          /* display: inline-grid; */
+          /* grid-template-columns: 1fr 1fr 1fr; */
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px 10px;
+          justify-content: space-between;
+      }
+      #brush-container, #legend-container {
+          display: flex;
+          align-items: center;
+      }
+      #legend-container .swatch:not(:first-child) {
+          margin-left: 10px;
+      }
+      #swatch, .swatch {
+          margin: 0 10px 0 0;
+          width: 40px;
+          min-width: 40px;
+          height: 40px;
+          border: 2px solid #ddd;
+      }
+      #brush {
+          margin: 0 10px;
+          cursor: pointer;
+      }
+      #grid-header {
+          display: flex;
+          border-color: #666;
+          border-width: 1px 1px 0;
+          border-style: solid;
+          box-sizing: border-box;
+          width: calc(100% - 4em); /* needs to match .grid-row */
+          margin-left: auto;
+      }
+      #grid-header .x-label {
+          display: flex;
+          flex: 1;
+          height: 60px;
+          justify-content: center;
+          align-items: center;
+          border-color: #666;
+          border-width: 1px 1px 0;
+          border-style: solid;
+      }
+      #grid-header .x-label.today {
+          background-color: #ddd;
+      }
+      #grid-scroll-container {
+          display: flex;
+          flex-direction: column;
+          /* max-height: 622px; /\* multiple of 60+2=62, +2 *\/ */
+          overflow-y: scroll;
+      }
+      .scroll-row {
+          display: flex;
+      }
+      /* toggle snap with `snap` class on scoll container */
+      #grid-scroll-container.snap {
+          scroll-snap-type: y mandatory;
+          scroll-padding: 1px;
+      }
+      #grid-scroll-container.snap .scroll-row {
+          scroll-snap-align: start;
+      }
+      .grid-row {
+          display: flex;
+          justify-content: center;
+          /* align-items: center; */
+          width: calc(100% - 4em); /* accomodate .y-label / needs to match #grid-header */
+          box-sizing: border-box; /* subtle, but necessary */
+          border-left: 1px solid #ddd;
+          border-right: 1px solid #ddd;
+      }
+      .y-label {
+          display: flex;
+          box-sizing: border-box;
+          width: 4em; /* also see .grid-row */
+          justify-content: center;
+          margin-top: -0.5em;
+      }
+      .scroll-row:first-child .grid-row  {
+          border-top: 1px solid #ddd;
+      }
+      .scroll-row:last-child .grid-row {
+          border-bottom: 1px solid #ddd;
+      }
+      .cell {
+          display: flex;
+          flex-direction: column;
+          /* border: 1px solid #ddd; */
+          flex: 1;
+      }
+      .cell-inner {
+          display: flex;
+          height: 15px;
+          border-left: 1px solid #ddd;
+          border-right: 1px solid #ddd;
+      }
+      /* this complicated border arrangement ensures that the main part
+      of the grid is entirely tiled by cell-inner. i.e. the grid lines
+      aren't spaces between the cells, they are part of */
+      .cell-inner:nth-child(1) {
+          border-top: 1px solid #ddd
+      }
+      .cell-inner:nth-child(4) {
+          border-bottom: 1px solid #ddd;
+      }
+      /* https://waldyrious.net/viridis-palette-generator/ */
+      /* these taken from viridis 9 */
+      .priority0 {
+          background-color: #addc30
+      }
+      .priority1 {
+          background-color: #5ec962;
+      }
+      .priority2 {
+          background-color: #28ae80;
+      }
+      .priority3 {
+          background-color: #21918c;
+      }
+      .priority4 {
+          background-color: #2c728e;
+      }
+      .priority9 {
+          background-color: #3b528b;
+      }
+      .cell-inner {
+          cursor: crosshair;
+      }
+      /* Don't show cursor on e.g. iphone */
+      @media (hover: hover) {
+          .cell-inner:hover {
+              background-color: black;
+          }
+      }
+      .left-bar {
+          margin: 0 5% 0 10%;
+          width: 35%;
+      }
+      .right-bar {
+          margin: 0 10% 0 5%;
+          width: 35%;
+      }
+      .swatch.busy, .busy > .left-bar {
+          background-color: #999;
+      }
+      .ifneeded > .left-bar {
+          background-color: #999;
+          opacity: 50%;
+      }
+      .swatch.meeting, .meeting > .right-bar {
+          /* background-color: gold; */
+          background-color: #fde725;
+      }
+
+      /* overrides for custom.css / bootstrap */
+      .navbar {
+          padding-bottom: 0;
+          min-height: 54px; /* hack to avoid slight header resize going to most narrow view */
+      }
+      .navbar {
+          padding-top: 0;
+      }
+      .navbar::before, .navbar::after,
+      .navbar-header::before, .navbar-header::after,
+      .navbar-collapse::before, .navbar-collapse::after {
+          content: none;
+      }
+      /* end overrides */
+
+    </style>
+  </head>
+  <body>
+
+    <div id="main-container">
+
+      <div id="upper-container">
+
+        <div id="control-container">
+          {%- from "nav.html" import nav -%}
+          {{ nav(current_user) }}
+
+          <h1 id="pos"></h1>
+
+          <div id="nav-container">
+            <button id="today" class="availability-nav">Today</button>
+            <button id="prev" class="availability-nav">&larr;</button>
+            <button id="next" class="availability-nav">&rarr;</button>
+            <button id="copy" class="availability-nav">Repeat</button>
+            <span id="working-indicator"></span>
+          </div>
+
+          <div id="brush-legend-container">
+            <div id="brush-container">
+              <div id="swatch" class="priority0"></div>
+              Unavailable
+              <input id="brush" type="range" min="0" max="5" value="5">
+              Available
+            </div>
+            <div id="legend-container">
+              <div class="swatch busy"></div>
+              Busy
+              <div class="swatch meeting"></div>
+              Meeting
+            </div>
+          </div>
+
+        </div>
+
+        <!--- day / date labels --->
+        <div id="grid-header">
+        </div>
+
+      </div> <!-- end #upper-container -->
+
+      <div id="grid-scroll-container"> <!--  class="snap"> -->
+      </div>
+
+    </div>
+
+  </body>
+</html>

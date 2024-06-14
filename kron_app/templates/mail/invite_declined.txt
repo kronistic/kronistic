@@ -1,0 +1,6 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Dear {{user.first_name}},
+
+We emailed {{email.address}} to set up a Kronistic account. Unfortunately, they declined. You will need to schedule with them by hand.
+{% endblock %}

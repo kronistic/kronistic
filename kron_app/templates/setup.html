@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="setup">
+  {% if form.errors %}
+  <div class="row">
+    <div class="memo">
+      <p>Please fix these problem(s) with the form:</p>
+      {% for msgs in form.errors.values() %}
+      {% for msg in msgs %}
+      <p>* <span class="error-msg">{{ msg }}</span></p>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="row">
+    <div class="memo">
+      <p>
+        Hi {{ current_user.first_name }}! I'm Kron, your AI scheduling
+        assistant. To get started, please let me know when you are
+        available for meetings:
+      </p>
+    </div>
+  </div>
+  {% endif %}
+  <div class="row">
+    <form action="" method="post">
+      {{ form.hidden_tag() }}
+      <p>
+        Kron, please schedule my meetings between
+        {{ form.start_time }} and {{ form.end_time }}
+        ({{ current_user.tzname }} time)
+        on:
+      </p>
+      <p>
+        {{ form.mo }} {{ form.mo.label }}<br>
+        {{ form.tu }} {{ form.tu.label }}<br>
+        {{ form.we }} {{ form.we.label }}<br>
+        {{ form.th }} {{ form.th.label }}<br>
+        {{ form.fr }} {{ form.fr.label }}<br>
+        {{ form.sa }} {{ form.sa.label }}<br>
+        {{ form.su }} {{ form.su.label }}
+      </p>
+      <p>
+        {{ form.submit(class_='btn') }}
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

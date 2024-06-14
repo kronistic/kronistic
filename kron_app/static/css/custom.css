@@ -1,0 +1,629 @@
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #fffffc;
+}
+
+p {
+  line-height: 1.7em;
+}
+
+select {
+  padding: 1px 4px; /* improves consistency across ff & chrome */
+}
+
+.navbar {
+  padding-top: 18px;
+  padding-bottom: 18px;
+  background-color: #fffffc;
+}
+
+.navbar, .navbar-collapse {
+    border: 0;
+}
+
+.navbar-toggle {
+    margin-right: 0;
+}
+
+.navbar-nav a {
+    border: none;
+    margin-bottom: 10px;
+}
+
+@media (min-width: 768px) {
+    .navbar-nav a {
+        margin-bottom: 0;
+        margin-left: 20px;
+    }
+}
+
+.btn {
+  background-color: #064a5b;
+  border-color: #064a5b;
+  color: #fffffc !important;
+  /* TODO: this gives us square buttons if necessary */
+  /* border-radius: 0; */
+}
+
+.navbar-nav {
+    padding-top: 2px; /* Vertical-align nav buttons */
+}
+
+.navbar-nav a:hover, .navbar-nav a:focus {
+  background: #064a5b !important;
+  border: none;
+}
+
+/* TODO: Figure out how to fix left/right content alignment site-wide */
+/* Override negative margins from grid, since they're throwing
+   alignment out. Can't do this for e.g. help page because left
+   alignment gets messed up.*/
+.meetings .row, .setup .row {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.navbar-header .logo {
+  display: inline-block; /* improves look of logo when it has focus */
+  background-color: #064a5b; /* may as well show background colour while image is fetched? */
+}
+
+.navbar-header a:hover, .navbar-header a:focus {
+  text-decoration: none;
+}
+
+.navbar-header .logo-text {
+    color: #333;
+    text-transform: uppercase;
+    font-size: 24px;
+    letter-spacing: 2.18px;
+    font-weight: 700;
+    vertical-align: middle;
+    margin-left: 18px;
+}
+
+.navbar-external {
+    display: none;
+    vertical-align: middle;
+}
+.navbar-external a, .navbar-external a:hover, .navbar-external a:focus {
+    color: #333;
+    font-size: 14px;
+    vertical-align: middle;
+    margin-left: 18px;
+}
+
+.navbar .navbar-external a:hover, .navbar a:hover.logo-text {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+}
+
+@media (min-width: 992px) {
+    .navbar-external {
+        display: inline;
+    }
+}
+
+.btn-big {
+  font-size: 20px !important;
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+  padding-left: 25px !important;
+  padding-right: 25px !important;
+  border: none !important;
+}
+
+.btn-big:hover {
+  background: #064a5b !important;
+  border: none !important;
+}
+
+.highlight {
+  color: #064a5b;
+}
+
+a, a:hover, a:focus {
+  color: #7a9c60;
+}
+
+footer {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
+footer a, footer a:hover, footer a:visited {
+  color: #333;
+}
+
+footer a:focus {
+  text-decoration: none;
+}
+
+/* Profile page */
+
+.profile {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
+.profile p {
+  font-size: 20px;
+}
+
+.profile ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.profile li {
+    font-size: 20px;
+}
+
+.profile .row {
+  padding-top: 30px;
+}
+
+.profile-add {
+  padding-top: 30px;
+}
+
+.profile-add .btn {
+  margin-right: 20px;
+}
+
+.profile-subsection {
+  padding-bottom: 5px;
+}
+
+.pref-section {
+  padding-bottom: 20px;
+}
+
+.profile-subsection textarea {
+  min-width: 400px;
+  min-height: 100px;
+  /* margin-left: 20px; */
+}
+
+.experimental {
+  margin-left: 10px;
+  vertical-align: middle;
+  font-size: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f9f9f6;
+}
+
+/* Meetings page */
+
+.meetings {
+  padding-bottom: 50px;
+}
+
+.all-meetings ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+.all-meetings .event {
+  padding-bottom: 10px;
+}
+
+.form-required {
+  color: red;
+}
+
+.meetings .row {
+  padding-top: 40px;
+}
+
+.hl, .hl:hover {
+  color: #fffffc;
+  background-color: #7a9c60;
+}
+
+/* Form stuff */
+
+#groups-container .add {
+  font-size: 50px !important;
+}
+
+#groups-container .remove {
+  font-size: 25px;
+}
+
+.event p {
+  font-size: 18px;
+}
+
+.event .field-container {
+    font-size: 18px;
+    padding-top: 5px;
+    margin-bottom: 10px;
+}
+
+.event-form {
+  padding-top: 40px;
+}
+
+#attendees-container {
+    padding-top: 5px;
+    margin-bottom: 20px;
+    margin-left: 10px;
+}
+
+#attendees {
+    float: left;
+}
+
+#attendees-container label {
+    font-size: 18px;
+    margin-bottom: 0;
+}
+
+#attendees-container .attendee {
+    float: left;
+    clear: both;
+    font-size: 18px;
+    padding-top: 5px;
+    margin-bottom: 10px;
+}
+
+#attendees-container .attendee .name-container {
+    width: 280px;
+    float: left;
+    overflow: hidden;
+    /* white-space: nowrap; */
+}
+
+#attendees-container .declined.attendee .name {
+    text-decoration: line-through;
+}
+
+#attendees-container .declined-label {
+    display: none;
+    font-size: 14px;
+    color: #999;
+}
+
+#attendees-container .declined.attendee .declined-label {
+    display: inline;
+}
+
+.daterangepicker {
+  font-family: 'Montserrat', sans-serif;
+}
+.daterangepicker .calendar-table td,
+.daterangepicker .calendar-table th {
+  font-size: 16px;
+}
+
+.daterangepicker td.today {
+  background-color: lightyellow;
+}
+
+.priorityinput {
+  display: flex;
+}
+
+.priorityinput input {
+    margin: 0 10px;
+}
+
+.prioritylabel {
+  font-size: 18px;
+ }
+
+/* If highlighting the end points of the range proves confusing
+   (because the distinction might prompt the thought that end points
+   aren't included) we can make the styling uniform something like
+   this. (Though these break the cell hover styling, which would be good to fix.) */
+
+/* .daterangepicker td.start-date, .daterangepicker td.end-date { */
+/*     color: #333 !important; */
+/*     background-color: #ebf4f8 !important; */
+/* } */
+
+/* .daterangepicker td.in-range { */
+/*     color: white !important; */
+/*     background-color: #357ebd !important; */
+/* } */
+
+.daterangepicker button {
+  font-size: 16px !important;
+  font-weight: normal !important;
+  padding: 8px 10px !important;
+  border: none;
+}
+
+.daterangepicker .applyBtn {
+  background-color: #064a5b !important;
+}
+
+.daterangepicker .cancelBtn {
+  background-color: #999 !important;
+}
+
+.daterangepicker .drp-selected {
+  font-size: 16px;
+}
+
+.event #title, .event #location {
+  min-width: 400px;
+}
+
+.event #add-virtual-link, .event #add-virtual-link-tip {
+  font-size: 14px;
+}
+.event a#add-virtual-link:focus {
+  text-decoration: none;
+}
+.event a#add-virtual-link:hover {
+  text-decoration: underline;
+}
+
+.ql-container {
+    max-width: 400px;
+    font-size: 18px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.ql-editor {
+    /* TODO: specify a border (outline?) color for all input elements to
+    achieve consistency (within the for) in all browsers? */
+    border: 1px solid rgb(118,118,118);
+    border-radius: 2.5px;
+    padding: 3px;
+    min-height: 100px;
+    overflow: visible;
+    background-color: white;
+}
+
+.ql-editor p {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.event input:focus-visible,
+.ql-editor:focus-visible {
+    /* FF default */
+    /* border-color: rgb(0,122,255); */
+    /* chrome default */
+    border-color: rgb(0, 95, 204);
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 2.5px;
+    outline: 0;
+}
+
+.ql-editor:focus-visible {
+    /* Accommodate increase in border width so that text doesn't shift. */
+    padding: 2px;
+}
+
+.event p {
+  padding-top: 5px;
+}
+
+.event .preamble {
+  max-width: 500px;
+}
+
+.event .btn {
+  font-size: 20px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+  border: none !important;
+}
+
+.all-meetings {
+  font-size: 20px;
+}
+
+table.admin td, table.admin th {
+    padding: 10px;
+}
+
+table.admin tr {
+    border-bottom: 1px solid #eaeaea;
+}
+
+/* Group form */
+
+.group.container {
+    padding-top: 50px;
+}
+
+.group.container .field {
+    padding: 10px 0;
+}
+
+.group.container #nick {
+    width: 280px;
+}
+
+.group.container #members {
+    /* border: 1px solid green; */
+    padding: 0;
+}
+
+.group.container #members,
+.group.container label,
+.group.container input,
+.group.container p {
+    font-size: 18px;
+}
+
+.group.container #members .member-inner {
+    float: left;
+    width: 280px;
+    /* border: 1px solid green; */
+}
+
+.group.container #members .name {
+    /* border: 1px solid red; */
+    /* hide overflow to avoid breaking layout on long names */
+    margin-right: 10px;
+    overflow: hidden;
+}
+
+.group.container .member:first-child {
+    padding-top: 5px;
+}
+
+.group.container .member {
+    /* border: 1px solid red; */
+    padding: 0 0 10px;
+}
+
+.group.container .member .icon {
+    float: left;
+    /* vertical-align: baseline; */
+    margin-top: 1px;
+    margin-right: 10px;
+}
+
+.group.container .btn {
+    padding: 15px;
+}
+
+/* Invite page */
+
+.invite p, .invite li {
+    font-size: 20px;
+}
+
+.invite li .creator {
+    font-size: 15px;
+}
+
+.invite {
+    padding-top: 20px;
+}
+
+.invite .row {
+    padding-top: 30px;
+}
+
+.invite a.btn {
+  font-size: 20px !important;
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+  padding-left: 25px !important;
+  padding-right: 25px !important;
+  border: none !important;
+}
+
+.invite .no-thanks {
+  margin-left: 20px;
+}
+
+/* Alias page */
+
+.alias p, .alias li {
+    font-size: 20px;
+}
+
+.alias li .creator {
+    font-size: 15px;
+}
+
+.alias {
+    padding-top: 20px;
+}
+
+.alias .row {
+    padding-top: 30px;
+}
+
+.alias .no-thanks {
+  margin-left: 20px;
+}
+
+/* Sign in */
+
+.sign_in p {
+  font-size: 20px;
+  padding-top: 20px;
+}
+
+.sign_in .row {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}
+
+/* Set up */
+
+.setup p {
+  font-size: 20px;
+}
+
+.setup .row {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}
+
+.setup input[type=submit] {
+  font-size: 20px;
+  padding: 20px 25px;
+  border: none;
+}
+
+.setup label {
+  font-weight: normal;
+}
+
+.setup form p {
+  padding-bottom: 20px;
+}
+
+
+/* Fix it */
+
+.fixit p, .fixit li {
+  font-size: 20px;
+}
+
+.fixit .row {
+  padding-top: 50px;
+}
+
+.memo {
+  background-color:  #f9f9f6;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 25px;
+}
+
+.memo.error {
+  color: red;
+  border: 1px solid red;
+}
+
+.memo h1 {
+  font-size: 18px;
+  margin: 30px 0 15px;
+  font-style: italic;
+}
+
+.memo p {
+  font-size: 18px;
+}
+
+.memo p:last-child {
+  margin-bottom: 0;
+}
+
+.memo .error-msg {
+  color: red;
+}
+
+.meetings .memo p.outro {
+  margin-top: 30px;
+}
+
+.sign_in a img {
+  display: block; /* improves look of link when it has focus */
+}

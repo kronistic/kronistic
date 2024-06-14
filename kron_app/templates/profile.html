@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="container profile">
+  <div class="row" style="padding-top: 0px">
+    <h1 class="highlight">Profile</h1>
+  </div>
+  <div class="row profile-info">
+    <div class="profile-subsection">
+      <h3 class="highlight">Account</h3>
+      <p>Account email: {{user.email}}</p>
+      {% for alias in user.aliases %}
+      <p>Alias: {{ alias }}</p>
+      {% endfor %}
+      <p><a href="{{ url_for('sign_out') }}">Sign Out</a></p>
+    </div>
+  </div>
+  <div class="row profile-calendars">
+    <div class="profile-subsection">
+      <h3>
+        <span class="highlight">Calendars</span>
+      </h3>
+    </div>
+    <div>
+      <ul>
+        {% for calendar in calendars %}
+        <li>
+          {% if calendar.gcal_summary == user.email %}
+          {{ user.name }}
+          {% else %}
+          {{ calendar.gcal_summary }}
+          {% endif %}
+          {% if calendar.is_gcal_primary() %}
+          (main calendar)
+          {% else %}
+          <form action="/calendar/delete" method="post" style="display: inline;">
+            <input type="hidden" name="calendar_id" value="{{ calendar.id }}" />
+            (<a href='#' onclick="$(this).parents('form').submit(); return false;">remove</a>)
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="profile-add">
+      <a href="/calendar/new" class="btn btn-big">Add Calendar</a>
+    </div>
+    <br><br>
+    {% if user.gcal_push_state_name == 'OFF' %}
+    <p>Meeting sync is not enabled.</p>
+    <form action="/enable_push" method="post" style="display: inline;">
+      <a href='#' class='btn btn-big' onclick="$(this).parents('form').submit(); return false;">Enable</a>
+    </form>
+    {% else %}
+    <p>Meeting sync is enabled.</p>
+    {% endif %}
+  </div>
+  <div class="row">
+    <div class="profile-subsection">
+      <h3>
+        <span class="highlight">Groups</span>
+        <span class="experimental">
+          This is an experimental feature. Learn more on the
+          <a href="{{ ext_url_for('help', _anchor='groups') }}">Groups help page</a>.
+        </span>
+      </h3>
+    </div>
+    <div>
+      {% if expanded_groups|count > 0 %}
+      <ul>
+        {% for nick, members in expanded_groups %}
+        <li>
+          <a href="{{ url_for('edit_group', nick=nick) }}">{{ nick }}</a>
+          ({{ members|count }})
+          <form action="{{ url_for('delete_group', nick=nick) }}" method="post" style="display: inline;">
+            (<a href='#' onclick="$(this).parents('form').submit(); return false;">remove</a>)
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>
+        You do not have any groups.
+      </p>
+      {% endif %}
+    </div>
+    <div class="profile-add">
+      <a href="{{ url_for('add_group') }}" class="btn btn-big">Add Group</a>
+    </div>
+  </div>
+  <div class="row">
+    <div class="profile-subsection">
+      <h3 class="highlight" id="preferences">Preferences</h3>
+      <form action="/profile/preferences" method="post">
+        <p>Send me an email:</p>
+        <p>
+          &hellip; when I am added to a meeting
+          <input id="meeting_notifications_on" type="radio" name="meeting_notifications" value="1" {%- if current_user.send_new_meeting_notifications -%}checked{%- endif -%} />
+          <label for="meeting_notifications_on">Yes</label>
+          <input id="meeting_notifications_off" type="radio" name="meeting_notifications" value="" {%- if not current_user.send_new_meeting_notifications -%}checked{%- endif -%} />
+          <label for="meeting_notifications_off">No</label>
+        </p>
+        <p>
+          &hellip; when a meeting is finalized
+          <input id="freeze_notifications_on" type="radio" name="freeze_notifications" value="1" {%- if current_user.send_freeze_notifications -%}checked{%- endif -%} />
+          <label for="freeze_notifications_on">Yes</label>
+          <input id="freeze_notifications_off" type="radio" name="freeze_notifications" value="" {%- if not current_user.send_freeze_notifications -%}checked{%- endif -%} />
+          <label for="freeze_notifications_off">No</label>
+        </p>
+        <p>
+          My local time is
+          <select name="tzname">
+            {% for (tzname, readable_name) in tzoptions %}
+            <option value="{{ tzname }}"{% if current_user.tzname == tzname -%} selected{%- endif %}>{{ readable_name }}</option>
+            {% endfor %}
+          </select>
+        </p>
+        <p>
+          <label>Virtual meeting link</label> <span title="The meeting form allows the location of a meeting to be set to your virtual meeting link with one click." style="cursor: help;">(?)</span><br>
+          <input type="text" name="virtual_link" size="40" value="{{current_user.virtual_link or ''}}">
+        </p>
+        <!-- <p> -->
+        <!--   Include tiny sparks of joy in my calendar entries -->
+        <!--   <input id="poems_on" type="radio" name="poems" value="1" {%- if current_user.poems -%}checked{%- endif -%} /> -->
+        <!--   <label for="poems_on">Yes</label> -->
+        <!--   <input id="poems_off" type="radio" name="poems" value="" {%- if not current_user.poems -%}checked{%- endif -%} /> -->
+        <!--   <label for="poems_off">No</label> -->
+        <!-- </p> -->
+        <div class="profile-add">
+          <button type="submit" class="btn btn-big">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

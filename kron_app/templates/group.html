@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+<div id="member-template" class="member" style="display: none;">
+  <div class="member-inner">
+    <input type="hidden" class="nick_or_email" />
+    <img src="" width="16" height="16" class="icon">
+    <div class="name">{{ name }}</div>
+  </div>
+  <a href="#" class="remove">remove</a>
+</div>
+
+<div class="container group">
+  <div class="row">
+
+    <h1 class="highlight">
+      {{ 'Edit' if update else 'Add' }} group
+    </h1>
+
+    {% if form.errors %}
+    <pre>{{ form.errors }}</pre>
+    {% endif %}
+
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <p class="field">
+        {{ form.nick.label }}<br>
+        {{ form.nick(autocomplete='off') }}
+      </p>
+
+      <div class="field">
+        <label>Members</label>
+        <div id="members">
+          {% for member in form.members %}
+          <div class="member" style="">
+            <div class="member-inner">
+              {{ member.nick_or_email(class_='nick_or_email') }}
+              {% set name, type = get_name_and_type(member.nick_or_email.data) %}
+              <!-- https://feathericons.com/ -->
+              <!-- also see: -->
+              <!-- https://ikonate.com/ -->
+              <img src="{{ url_for_static('img/' + type + '.svg') }}" width="16" height="16" class="icon">
+              <div class="name">{{ name }}</div>
+            </div>
+            <a href="#" class="remove">remove</a>
+          </div>
+          {% endfor %}
+        </div>
+        <p id="autocomplete-container"></p>
+      </div>
+
+      <p class="field">
+        {{ form.submit(class_='btn', value='Update' if update else 'Add') }}
+        <span style="color: #aaa;">|</span>
+        <a href="{{ url_for('profile') }}">Cancel</a>
+      </p>
+
+    </form>
+  </div>
+</div>
+
+
+<script type="text/javascript">
+
+  const autocomplete_options = {{ autocomplete_options | tojson }};
+
+  function search(q) {
+    const ql = q.toLowerCase();
+    const matches = autocomplete_options.filter(obj => {
+      if (obj.type === 'user') {
+        return obj.email.toLowerCase().indexOf(ql) !== -1 || obj.name.toLowerCase().indexOf(ql) !== -1;
+      } else if (obj.type === 'group') {
+        return obj.name.toLowerCase().indexOf(ql) !== -1;
+      } else {
+        return false;
+      }
+    });
+    return matches;
+  }
+
+  function members() {
+    return $('#members input.nick_or_email').map((i, e) => $(e).val()).toArray();
+  }
+  function already_a_member(nick_or_email) {
+    return members().indexOf(nick_or_email) !== -1;
+  }
+
+  var nextMemberId = {{ form.next_member_id() }};
+  const $member_template = $('#member-template');
+
+  function add_member(obj) {
+    if (!obj) { return; }
+    // This kludge is used to clear the auto-complete when confirm
+    // happens on blur.
+    window.setTimeout(() => $('#autocomplete').val(''), 0);
+    if (obj.type === 'user') {
+      add_member_to_ui(obj.email, obj.name, obj.type);
+    } else if (obj.type == 'group') {
+      add_member_to_ui(obj.name, obj.name, obj.type);
+    }
+  }
+
+  function suggestion_template(obj) {
+    if (obj.type === 'user') {
+      return obj.name + '<br><span style="font-size: 80%;">' + obj.email + '</span>'
+    } else if (obj.type === 'group') {
+      return obj.name + '<br><span style="font-size: 80%;">' + obj.members.length + ' member(s)</span>'
+    }
+  }
+
+  const ICON_SRC = {
+    user: "{{ url_for_static('img/user.svg') }}",
+    group: "{{ url_for_static('img/group.svg') }}",
+  };
+
+  function add_member_to_ui(nick_or_email, name, type) {
+    if (already_a_member(nick_or_email)) { return; }
+    const i = nextMemberId++;
+    const $e = $member_template.clone().prop('id', '');
+    $e.find('.name').text(name);
+    $e.find('img').prop('src', ICON_SRC[type]);
+    $e.find('input.nick_or_email').prop('name', 'members-'+i+'-nick_or_email').val(nick_or_email);
+    $e.appendTo('#members').show();
+  }
+
+  $(function() {
+    // Set-up the attendee auto-complete.
+    accessibleAutocomplete({
+      element: document.querySelector('#autocomplete-container'),
+      id: 'autocomplete',
+      source: (q, k) => k(search(q)),
+      displayMenu: 'overlay',
+      placeholder: 'Add user or group...',
+      autoselect: true,
+      showNoOptionsFound: false,
+      confirmOnBlur: true,
+      onConfirm: add_member,
+      templates: {
+        suggestion: suggestion_template,
+        inputValue: obj => ''
+      }});
+  });
+
+  $('#members').click(function(e) {
+    var $e = $(e.target);
+    if ($e.is('.remove')) {
+      $e.parents('.member').remove();
+      return false;
+    }
+  });
+
+    // Don't submit the form when enter is pressed, unless on the
+    // submit button.
+    // https://stackoverflow.com/a/1977126
+    $('form').on('keydown', ':input:not(textarea):not(:submit)', function (e) {
+      if (e.which == 13) {
+        e.preventDefault();
+      }
+    });
+  
+</script>
+{% endblock %}

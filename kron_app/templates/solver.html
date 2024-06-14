@@ -1,0 +1,62 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+<div class="container">
+  <div class="row">
+    <h1>Solver</h1>
+    <p>Number of log entries: {{ count }}</p>
+    <p><a href="{{ url_for('solver_pickle', page=page) }}">Download</a></p>
+    <p>
+      {% if show_prev %}
+      <a href="{{ url_for('solver', page=page-1) }}">Prev</a>
+      {% else %}
+      Prev
+      {% endif %}
+      |
+      {% if show_next %}
+      <a href="{{ url_for('solver', page=page+1) }}">Next</a>
+      {% else %}
+      Next
+      {% endif %}
+    </p>
+    <table class="admin">
+      <tr>
+        <th>finished at</th>
+        <th>pid</th>
+        <th>cputime (ms)</th>
+        <th>walltime (ms)</th>
+        <th>rss before / after (mb)</th>
+        <th>available (mb)</th>
+        <th>caller</th>
+        <th>result_code</th>
+        <th>problem_size</th>
+        <th></th>
+      </tr>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.created_at.strftime('%y/%m/%d %H:%M:%S') }}</td>
+        <td>{{ entry.data['pid'] }}</td>
+        <td style="text-align: right;">{{ entry.data['cputime'] }}</td>
+        <td style="text-align: right;">{{ entry.data['walltime'] }}</td>
+        <td style="text-align: right;">
+          {% if entry.data['mem_rss_before'] and entry.data['mem_rss_after'] %}
+          {{ (entry.data['mem_rss_before'] / 1048576) | round(1) }} /
+          {{ (entry.data['mem_rss_after'] / 1048576) | round(1) }}
+          {% endif %}
+        </td>
+        <td style="text-align: right;">
+          {% if entry.data['mem_available'] %}
+          {{ (entry.data['mem_available'] / 1048576) | round(1) }}
+          {% endif %}
+        </td>
+        <td>{{ entry.data['caller'] }}</td>
+        <td>{{ entry.data['result_code'] }}</td>
+        <td style="text-align: right;">{{ entry.data['problem_size'] }}</td>
+        <td><a href="{{ url_for('solver_log_entry', id=entry.id) }}">more &hellip;</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

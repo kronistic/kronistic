@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block subnav %}
+<div class="container" style="font-size: 20px; border-bottom: 1px solid #eee; margin-bottom: 10px;">
+  <a href="{{ url_for('events') }}">Events</a> |
+  <a href="{{ url_for('users', show='recent') }}">Users</a> |
+  <a href="{{ url_for('calendars') }}">Calendars</a> |
+  <a href="{{ url_for('invites') }}">Invites</a> |
+  <a href="{{ url_for('solver') }}">Solver</a> |
+  <a href="{{ url_for('errors') }}">Errors</a> |
+  <a href="{{ url_for('queue') }}">Queue</a>
+</div>
+{% endblock %}

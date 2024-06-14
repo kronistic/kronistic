@@ -1,0 +1,10 @@
+{%- extends "base.txt" -%}
+{%- block content -%}
+Hello,
+
+{{user.name}} declined your meeting "{{event.title}}".
+
+If you would like Kronistic to schedule the meeting without this attendee, please remove {{user.first_name}} from the meeting or change their status to "optional."
+
+You can view and edit your meetings from the My Meetings page: {{meetings_url}}
+{% endblock %}

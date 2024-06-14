@@ -1,0 +1,63 @@
+{% extends "admin.html" %}
+
+{% block app_content %}
+
+<div class="container">
+  <div class="row">
+    <h1>Pending Invites</h1>
+    <p>
+      <ul>
+        <li>
+          Links are only shown for <i>@kronistic.com</i> emails to
+          avoid recording false sign up progress against genuine
+          invites.
+        </li>
+        <li>
+          Use your browser's "open in new private window" feature (or
+          similar) to avoid the redirect that happens when viewing the
+          invite page when already signed in.
+        </li>
+      </ul>
+    </p>
+    <table class="admin">
+      <tr>
+        <th>email</th>
+        <th>invited to</th>
+        <th>declined</th>
+        <th>sign up progress</th>
+        <th>links</th>
+        <th>created_at</th>
+      </tr>
+      {% for email, event_ids, max_sign_up_step in invites %}
+      <tr>
+        <td>{{ email.address }}</td>
+        <td>{{ event_ids }}</td>
+        <td>{{ email.declined }}</td>
+        <td>
+          {% if max_sign_up_step %}
+          {% set step, dt, extra_info = max_sign_up_step %}
+          {{ step.name.lower() }}
+          {% if extra_info %}
+          / {{ extra_info }}
+          {% endif %}
+          @
+          {{ dt.strftime('%y/%m/%d %H:%M:%S') }}
+          {% else %}
+          None
+          {% endif %}
+        </td>
+        <td>
+          {% if email.address.endswith('@kronistic.com') %}
+          <a href="{{ url_for('invite', **{INVITE_UID_KEY: email.uid}) }}">invite</a>
+          /
+          <a href="{{ url_for('alias', **{INVITE_UID_KEY: email.uid}) }}">alias</a>
+          {% endif %}
+        </td>
+        <td>{{ email.created_at.strftime('%y/%m/%d %H:%M:%S') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}

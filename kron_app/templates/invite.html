@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block app_content %}
+<div class="container invite">
+  <div class="row">
+    <h1 class="highlight">Your Meetings</h1>
+  </div>
+  {% if events %}
+  <div class="row">
+    <p>
+      You have been invited to attend the following {{ 'meeting' | pluralize(events) }}:
+    </p>
+    <ul>
+      {% for (title, creator_name) in events %}
+      <li>
+        <span class="title">"{{ title }}"</span><br>
+        <span class="creator">Created by {{ creator_name }}</span><br>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="row">
+    <p>
+      Please sign in to schedule {% if events|count is
+      eq(1) -%}this{%- else -%}these{%- endif %} {{ 'meeting' |
+      pluralize(events) }}. Alternatively, you can let {{
+      creator_names | tosentence }} know that you would prefer to not
+      use Kronistic by clicking "No Thanks".
+    </p>
+  </div>
+  <div class="row">
+    <form method="POST" action="{{ url_for('do_decline', email_uid=email.uid) }}">
+      <p>
+        <a href="{{ url_for('sign_in') }}" href="{{ url_for('sign_in') }}" class="btn">Sign In</a>
+        <a href="#" onclick="$(this).parents('form').submit(); return false;" class="no-thanks">No Thanks</a>
+      </p>
+    </form>
+  </div>
+  {% else %}
+  <div class="row">
+    <p>
+      You have no meeting invites.
+    </p>
+    <p>
+      Meetings that you have already declined and meetings removed by
+      the organizer are not shown here.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
